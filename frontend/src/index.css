@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background: linear-gradient(135deg, #f0fdf4 0%, #fefce8 50%, #fce7f3 100%);
+    @apply min-h-screen font-sans text-gray-900;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg;
+  }
+
+  .glass-button {
+    @apply px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all duration-300 font-semibold shadow-md hover:shadow-xl;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-600 via-purple-500 to-blue-500 bg-clip-text text-transparent font-bold;
+  }
+
+  .node-locked {
+    @apply bg-gray-100 border-gray-300 text-gray-500;
+  }
+
+  .node-available {
+    @apply bg-blue-50 border-blue-400 text-blue-900 hover:bg-blue-100;
+  }
+
+  .node-in-progress {
+    @apply bg-yellow-50 border-yellow-400 text-yellow-900 hover:bg-yellow-100;
+  }
+
+  .node-completed {
+    @apply bg-green-50 border-green-400 text-green-900 hover:bg-green-100;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f0fdf4;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #22c55e;
+  border-radius: 5px;
+}
