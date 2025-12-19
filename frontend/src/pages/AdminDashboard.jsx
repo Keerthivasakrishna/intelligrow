@@ -104,7 +104,7 @@ export default function AdminDashboard() {
         insights.push(`${percentage}% of students are currently on "${mostCommonTopic}" topic`)
 
         // Subject performance comparison
-        const dsa Avg = students.filter(s => s.subjects_enrolled.includes('DSA')).reduce((acc, s) => acc + (parseFloat(s.average_quiz_score) || 0), 0) / students.filter(s => s.subjects_enrolled.includes('DSA')).length
+        const dsaAvg = students.filter(s => s.subjects_enrolled.includes('DSA')).reduce((acc, s) => acc + (parseFloat(s.average_quiz_score) || 0), 0) / students.filter(s => s.subjects_enrolled.includes('DSA')).length
         const cnAvg = students.filter(s => s.subjects_enrolled.includes('CN')).reduce((acc, s) => acc + (parseFloat(s.average_quiz_score) || 0), 0) / students.filter(s => s.subjects_enrolled.includes('CN')).length
         const osAvg = students.filter(s => s.subjects_enrolled.includes('OS')).reduce((acc, s) => acc + (parseFloat(s.average_quiz_score) || 0), 0) / students.filter(s => s.subjects_enrolled.includes('OS')).length
 
@@ -385,3 +385,4 @@ function MetricCard({ icon: Icon, label, value, color }) {
         </motion.div>
     )
 }
+
