@@ -25,7 +25,7 @@ export default function Dashboard() {
         // Use mock data for guest and email users
         if (isGuest || isEmailAuth) {
             console.log('Using mock data for:', isGuest ? 'guest' : 'email user')
-            setSubjects(mockSubjects)
+            const savedCourses = localStorage.getItem('courses'); setSubjects(savedCourses ? JSON.parse(savedCourses) : mockSubjects)
             setLoading(false)
             return
         }
@@ -42,7 +42,7 @@ export default function Dashboard() {
             if (!token) {
                 // If no token, use mock data instead of redirecting
                 console.log('No Supabase token, using mock data')
-                setSubjects(mockSubjects)
+                const savedCourses = localStorage.getItem('courses'); setSubjects(savedCourses ? JSON.parse(savedCourses) : mockSubjects)
                 setLoading(false)
                 return
             }
@@ -60,7 +60,7 @@ export default function Dashboard() {
         } catch (error) {
             console.error('Error fetching subjects:', error)
             // On error, use mock data
-            setSubjects(mockSubjects)
+            const savedCourses = localStorage.getItem('courses'); setSubjects(savedCourses ? JSON.parse(savedCourses) : mockSubjects)
         } finally {
             setLoading(false)
         }
@@ -116,3 +116,4 @@ export default function Dashboard() {
         </div>
     )
 }
+

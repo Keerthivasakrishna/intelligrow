@@ -6,7 +6,7 @@ import { supabase } from './supabase'
 // Student Pages
 import Login from './pages/Login'
 import PetSelection from './pages/PetSelection'
-import Dashboard from './pages/Dashboard'
+import Dashboard from './ pages/Dashboard'
 import SubjectGraph from './pages/SubjectGraph'
 import TopicContent from './pages/TopicContent'
 import Quiz from './pages/Quiz'
@@ -14,8 +14,8 @@ import Results from './pages/Results'
 import SubjectAnalytics from './pages/SubjectAnalytics'
 
 // Admin Pages
-import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
+import ManageCourses from './pages/ManageCourses'
 
 // Layouts
 import Layout from './components/Layout'
@@ -30,19 +30,10 @@ function ProtectedRoute({ children }) {
   const currentUser = localStorage.getItem('currentUser')
   const isEmailAuth = currentUser && currentUser !== 'null'
 
-  console.log('=== ProtectedRoute Check ===')
-  console.log('Supabase user:', user)
-  console.log('Guest mode:', isGuest)
-  console.log('Current user from localStorage:', currentUser)
-  console.log('Is email auth:', isEmailAuth)
-  console.log('Can access?:', !!(user || isGuest || isEmailAuth))
-
   if (!user && !isGuest && !isEmailAuth) {
-    console.log('❌ Access denied - redirecting to login')
     return <Navigate to="/" replace />
   }
 
-  console.log('✅ Access granted')
   return children
 }
 
@@ -50,15 +41,10 @@ function ProtectedRoute({ children }) {
 function AdminProtectedRoute({ children }) {
   const adminSession = JSON.parse(localStorage.getItem('adminSession') || '{}')
 
-  console.log('=== Admin Route Check ===')
-  console.log('Admin session:', adminSession)
-
   if (!adminSession.isAdmin) {
-    console.log('❌ Not admin - redirecting to admin login')
-    return <Navigate to="/admin" replace />
+    return <Navigate to="/" replace />
   }
 
-  console.log('✅ Admin access granted')
   return children
 }
 
@@ -88,10 +74,11 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Student Routes */}
+        {/* Unified Login */}
         <Route path="/" element={<Login />} />
         <Route path="/select-pet" element={<PetSelection />} />
 
+        {/* Student Routes */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
@@ -102,10 +89,9 @@ function App() {
         </Route>
 
         {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLogin />} />
-
         <Route element={<AdminLayout />}>
           <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+          <Route path="/admin/courses" element={<AdminProtectedRoute><ManageCourses /></AdminProtectedRoute>} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -115,3 +101,4 @@ function App() {
 }
 
 export default App
+
