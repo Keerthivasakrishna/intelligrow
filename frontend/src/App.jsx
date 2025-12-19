@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import useStore from './store/useStore'
 import { supabase } from './supabase'
 
-// Pages
+// Student Pages
 import Login from './pages/Login'
 import PetSelection from './pages/PetSelection'
 import Dashboard from './pages/Dashboard'
@@ -13,10 +13,15 @@ import Quiz from './pages/Quiz'
 import Results from './pages/Results'
 import SubjectAnalytics from './pages/SubjectAnalytics'
 
-// Layout
-import Layout from './components/Layout'
+// Admin Pages
+import AdminLogin from './pages/AdminLogin'
+import AdminDashboard from './pages/AdminDashboard'
 
-// Protected Route Component  
+// Layouts
+import Layout from './components/Layout'
+import AdminLayout from './components/AdminLayout'
+
+// Student Protected Route Component  
 function ProtectedRoute({ children }) {
   const { user } = useStore()
 
@@ -38,6 +43,22 @@ function ProtectedRoute({ children }) {
   }
 
   console.log('✅ Access granted')
+  return children
+}
+
+// Admin Protected Route Component
+function AdminProtectedRoute({ children }) {
+  const adminSession = JSON.parse(localStorage.getItem('adminSession') || '{}')
+
+  console.log('=== Admin Route Check ===')
+  console.log('Admin session:', adminSession)
+
+  if (!adminSession.isAdmin) {
+    console.log('❌ Not admin - redirecting to admin login')
+    return <Navigate to="/admin" replace />
+  }
+
+  console.log('✅ Admin access granted')
   return children
 }
 
@@ -67,6 +88,7 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Student Routes */}
         <Route path="/" element={<Login />} />
         <Route path="/select-pet" element={<PetSelection />} />
 
@@ -77,6 +99,13 @@ function App() {
           <Route path="/subjects/:subjectCode/analytics" element={<ProtectedRoute><SubjectAnalytics /></ProtectedRoute>} />
           <Route path="/topics/:topicId" element={<ProtectedRoute><TopicContent /></ProtectedRoute>} />
           <Route path="/topics/:topicId/quiz" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminLogin />} />
+
+        <Route element={<AdminLayout />}>
+          <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

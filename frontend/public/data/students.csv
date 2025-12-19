@@ -1,0 +1,21 @@
+student_id,name,year,department,subjects_enrolled,subject_progress_dsa,subject_progress_cn,subject_progress_os,topics_completed_count,average_quiz_score,total_time_spent_minutes,current_learning_node,last_active_date
+1,Aarav Kumar,2nd,CSE,"DSA,CN,OS",75,60,50,15,78.5,450,sorting,2024-01-18
+2,Priya Sharma,3rd,IT,"DSA,CN",85,70,0,18,82.3,520,dynamic-programming,2024-01-19
+3,Rohan Patel,1st,ECE,"CN,OS",0,45,40,8,65.2,280,tcp-ip,2024-01-17
+4,Ananya Singh,4th,CSE,"DSA,CN,OS",92,88,85,28,88.7,780,backtracking,2024-01-20
+5,Arjun Mehta,2nd,IT,"DSA,OS",68,0,55,12,71.4,390,trees,2024-01-16
+6,Diya Gupta,3rd,CSE,"DSA,CN,OS",80,75,65,22,79.8,620,graphs,2024-01-19
+7,Karthik Reddy,1st,ECE,"CN",0,50,0,5,68.9,210,osi-model,2024-01-15
+8,Sneha Joshi,2nd,IT,"DSA,CN",58,48,0,10,62.1,340,hashing,2024-01-14
+9,Vikram Iyer,4th,CSE,"DSA,CN,OS",95,90,92,30,91.2,850,network-security,2024-01-20
+10,Ishita Desai,2nd,ECE,"OS",0,0,70,8,74.6,310,processes,2024-01-18
+11,Aditya Nair,3rd,IT,"DSA,CN",72,65,0,16,73.5,480,searching,2024-01-17
+12,Kavya Pillai,1st,CSE,"DSA",42,0,0,5,59.3,180,linked-lists,2024-01-13
+13,Siddharth Rao,2nd,ECE,"CN,OS",0,55,60,11,69.8,360,routing,2024-01-19
+14,Meera Kulkarni,4th,IT,"DSA,CN,OS",88,82,78,26,85.4,720,deadlocks,2024-01-20
+15,Rahul Verma,3rd,CSE,"DSA",65,0,0,8,67.2,290,stacks,2024-01-16
+16,Tanvi Bhat,1st,IT,"CN",0,38,0,4,56.7,160,network-basics,2024-01-12
+17,Nikhil Shetty,2nd,CSE,"DSA,CN,OS",78,68,58,17,77.1,530,greedy,2024-01-19
+18,Pooja Menon,4th,ECE,"CN,OS",0,85,80,19,84.2,640,dns,2024-01-20
+19,Amit Chatterjee,3rd,IT,"DSA,CN",70,58,0,13,70.6,410,queues,2024-01-18
+20,Riya Kapoor,1st,CSE,"DSA,OS",48,0,45,7,63.4,240,arrays,2024-01-15
