@@ -1,232 +1,280 @@
-# IntelliGrow - AI-Powered Gamified Learning Platform 🚀
+# 🚀 IntelliGrow - AI-Powered Learning Platform
 
-A gamified learning platform for Computer Science topics (DSA, CN, OS) with AI-powered personalized insights, interactive skill graphs, and pet companions that grow with you!
+> Transform your Computer Science learning journey with AI-driven insights, gamification, and personalized study plans.
 
-## ✨ Features
-
-- 🎮 **Gamified Learning**: Earn XP, level up your pet, and unlock new topics
-- 🧠 **AI-Powered Insights**: Google Gemini analyzes your quiz performance and provides personalized recommendations
-- 📊 **Interactive Skill Graph**: Visual representation of learning paths with D3.js force-directed graphs
-- 🐕 **Pet Companions**: Choose from 8 adorable pets that grow as you learn
-- 📹 **Video Tutorials**: Embedded YouTube videos for each topic
-- 📝 **Comprehensive Quizzes**: 10-question quizzes with detailed explanations
-- 📈 **Progress Tracking**: Detailed analytics showing strengths, weaknesses, and focus areas
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **React** with Vite
-- **Tailwind CSS** for styling
-- **Framer Motion** for animations
-- **D3.js** for interactive graphs
-- **Lucide React** for icons
-
-### Backend
-- **FastAPI** (Python)
-- **Supabase** for authentication and database
-- **Google Gemini API** for AI-powered insights
-
-## 📋 Prerequisites
-
-- Node.js (v16 or higher)
-- Python (v3.8 or higher)
-- Google Gemini API Key
-- Supabase Account
-
-## 🚀 Setup Instructions
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/yourusername/intelligrow.git
-cd intelligrow
-```
-
-### 2. Frontend Setup
-
-```bash
-cd frontend
-npm install
-```
-
-Create a `.env.local` file in the `frontend` directory:
-
-```env
-# Copy from .env.example and fill in your values
-
-# Google Gemini API Key (Get from: https://aistudio.google.com/app/apikey)
-VITE_GEMINI_API_KEY=your_gemini_api_key_here
-
-# Supabase Configuration (Get from: https://supabase.com/dashboard)
-VITE_SUPABASE_URL=your_supabase_project_url_here
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-```
-
-### 3. Backend Setup
-
-```bash
-cd backend
-pip install -r requirements.txt
-```
-
-Create a `.env` file in the `backend` directory:
-
-```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_KEY=your_supabase_service_role_key
-```
-
-### 4. Get API Keys
-
-#### Google Gemini API Key
-1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Click "Create API Key"
-3. Copy the key to your `.env.local` file
-
-#### Supabase Keys
-1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
-2. Create a new project
-3. Go to Settings > API
-4. Copy the URL and anon key to your `.env.local`
-5. Copy the service role key to backend `.env`
-
-### 5. Run the Application
-
-**Terminal 1 - Backend:**
-```bash
-cd backend
-python -m uvicorn main:app --reload
-```
-
-**Terminal 2 - Frontend:**
-```bash
-cd frontend
-npm run dev
-```
-
-Visit `http://localhost:5173` in your browser!
-
-## 🎯 How to Use
-
-### Guest Mode (Quick Start)
-1. Click "Continue as Guest"
-2. Choose your pet companion
-3. Explore subjects (DSA, CN, OS)
-4. Take quizzes and earn XP
-5. Check Results page for AI-powered insights
-
-### With Authentication
-1. Sign in with Google
-2. All progress is saved to your account
-3. Access from any device
-
-## 🧠 AI Features
-
-The AI analyzes your quiz performance and provides:
-- **Strengths**: Topics where you excel
-- **Weaknesses**: Areas needing improvement
-- **Recommendations**: Actionable learning advice
-- **Focus Areas**: Specific topics to prioritize
-- **Overall Performance**: Motivational feedback
-
-## 📁 Project Structure
-
-```
-intelligrow/
-├── frontend/
-│   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Page components
-│   │   ├── services/       # API services (Gemini AI)
-│   │   ├── store/          # State management
-│   │   └── mockData.js     # Sample content & quizzes
-│   └── .env.example        # Environment variables template
-│
-├── backend/
-│   ├── main.py            # FastAPI application
-│   ├── requirements.txt   # Python dependencies
-│   └── .env.example       # Backend environment template
-│
-└── README.md
-```
-
-## 🔒 Security Notes
-
-**IMPORTANT**: 
-- Never commit `.env` or `.env.local` files to GitHub
-- Keep your API keys private
-- The `.gitignore` is configured to exclude these files
-- Always use environment variables for sensitive data
-
-## 🚀 Deployment
-
-### Frontend (Vercel/Netlify)
-1. Connect your GitHub repository
-2. Add environment variables in the dashboard:
-   - `VITE_GEMINI_API_KEY`
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-3. Deploy!
-
-### Backend (Railway/Render)
-1. Connect your GitHub repository
-2. Add environment variables
-3. Set build command: `pip install -r requirements.txt`
-4. Set start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-
-## 📝 Adding More Content
-
-To add more topics:
-
-1. Open `frontend/src/mockData.js`
-2. Add to `mockTopicContent`:
-```javascript
-'5': {
-  id: '5',
-  title: 'Topic Name',
-  description: 'Short description',
-  difficulty: 'beginner',
-  videoUrl: 'https://www.youtube.com/embed/VIDEO_ID',
-  content: `# Topic Title
-  
-  ## Introduction
-  Your content here...`
-}
-```
-
-3. Add 10 quiz questions to `mockQuizQuestions`:
-```javascript
-'5': [
-  { 
-    id: '41', 
-    question_text: 'Question?', 
-    options: ['A', 'B', 'C', 'D'], 
-    correct_answer: 0, 
-    explanation: 'Because...' 
-  },
-  // ... 9 more questions
-]
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- Video tutorials from content creators on YouTube
-- Supabase for backend infrastructure
-- Google Gemini for AI capabilities
-- All open-source libraries used in this project
-
-## 📧 Contact
-
-For questions or suggestions, please open an issue on GitHub.
+[![Live Demo](https://img.shields.io/badge/demo-live-green)](https://intelligrow.vercel.app)
+[![GitHub](https://img.shields.io/badge/github-repo-blue)](https://github.com/Keerthivasakrishna/intelligrow)
 
 ---
 
-Made with ❤️ for learners everywhere
+## ✨ Features
+
+### 🎯 **Core Features**
+- **AI-Powered Analytics** - Deep learning insights using Google Gemini AI
+- **Interactive Skill Graphs** - Visual representation of topic mastery
+- **Gamified Learning** - Pet companions that grow with your progress
+- **Personalized Study Plans** - 4-week comprehensive learning roadmaps
+- **Email/Password Authentication** - Secure user accounts with localStorage
+
+### 📚 **Subjects Covered**
+- **DSA** - Data Structures & Algorithms (12 topics)
+- **Computer Networks** - CN (10 topics)
+- **Operating Systems** - OS (10 topics)
+
+### 🧠 **AI Analysis Includes**
+- Cognitive assessment & learning velocity
+- Detailed strengths & weaknesses analysis
+- Root-cause identification
+- Memory retention strategies
+- Spaced repetition recommendations
+- Motivational insights
+
+---
+
+## 🎮 Demo Accounts
+
+Try the platform with these pre-loaded accounts:
+
+| Email | Password |
+|-------|----------|
+| `keerthi@gmail.com` | `kvk@123` |
+| `sibhi@gmail.com` | `sibhi@123` |
+| `swarna@gmail.com` | `swarna@123` |
+| `neya@gmail.com` | `neya@123` |
+
+**Or use Guest Mode** for instant access!
+
+---
+
+## 🚀 Quick Start
+
+### **Prerequisites**
+- Node.js 18+ 
+- npm or yarn
+
+### **Installation**
+
+```bash
+# Clone the repository
+git clone https://github.com/Keerthivasakrishna/intelligrow.git
+cd intelligrow
+
+# Install frontend dependencies
+cd frontend
+npm install
+
+# Create environment file (optional - for AI features)
+# Create .env.local in frontend folder with:
+# VITE_GEMINI_API_KEY=your_gemini_api_key
+
+# Run development server
+npm run dev
+```
+
+**Open** http://localhost:5173
+
+---
+
+## 🏗️ Project Structure
+
+```
+intelligrow/
+├── frontend/              # React + Vite application
+│   ├── src/
+│   │   ├── components/   # Reusable UI components
+│   │   ├── pages/        # Page components
+│   │   ├── services/     # AI & API services
+│   │   ├── store/        # Zustand state management
+│   │   └── mockData.js   # Sample quiz data
+│   ├── public/           # Static assets
+│   └── package.json
+├── backend/              # Python FastAPI (optional)
+└── README.md
+```
+
+---
+
+## 💡 How It Works
+
+### 1. **Sign In**
+- Use email/password or guest mode
+- Select your learning companion pet
+
+### 2. **Choose Subject**
+- Pick from DSA, CN, or OS
+- View interactive skill graph
+
+### 3. **Take Quizzes**
+- Answer topic-specific questions
+- Track your progress in real-time
+
+### 4. **Get AI Insights**
+- Detailed analysis of your performance
+- Personalized study recommendations
+- 4-week learning roadmap
+
+---
+
+## 🛠️ Tech Stack
+
+### **Frontend**
+- **React** - UI library
+- **Vite** - Build tool
+- **Tailwind CSS** - Styling
+- **Framer Motion** - Animations
+- **React Router** - Navigation
+- **Zustand** - State management
+
+### **AI & Services**
+- **Google Gemini API** - AI-powered analysis
+- **localStorage** - Data persistence
+
+### **Optional Backend**
+- **FastAPI** - Python backend (ready for future features)
+- **Supabase** - Database (configured but not required)
+
+---
+
+## 🎨 Screenshots
+
+### Dashboard
+![Dashboard](https://via.placeholder.com/800x400?text=Dashboard+Screenshot)
+
+### AI Analysis
+![AI Analysis](https://via.placeholder.com/800x400?text=AI+Analysis+Screenshot)
+
+### Skill Graph
+![Skill Graph](https://via.placeholder.com/800x400?text=Skill+Graph+Screenshot)
+
+---
+
+## 🔑 Environment Variables
+
+For full AI functionality, add to `frontend/.env.local`:
+
+```env
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+**Get your free API key:** https://ai.google.dev/
+
+---
+
+## 📱 Features in Detail
+
+### **Authentication**
+- Email/password sign up & sign in
+- Guest mode for instant access
+- Pre-loaded demo accounts
+- Secure localStorage storage
+
+### **Gamification**
+- Choose from 8 pet companions
+- Pets level up with your progress
+- XP system for quiz completion
+- Visual progress tracking
+
+### **AI Analysis**
+- **Cognitive Assessment** - Learning velocity & mental models
+- **Strength Analysis** - What you're excelling at
+- **Weakness Identification** - Root causes & impact
+- **Conceptual Gaps** - What's missing in your understanding
+- **Study Plans** - Immediate actions & 4-week roadmap
+- **Memory Strategies** - Mnemonics & retention techniques
+
+---
+
+## 🚢 Deployment
+
+### **Vercel (Recommended)**
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+cd frontend
+vercel
+```
+
+**Settings:**
+- Root Directory: `frontend`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+**Environment Variables:**
+- Add `VITE_GEMINI_API_KEY` in Vercel dashboard
+
+### **Netlify**
+
+```bash
+# Install Netlify CLI
+npm i -g netlify-cli
+
+# Deploy
+cd frontend
+netlify deploy
+```
+
+---
+
+## 📋 To-Do / Future Enhancements
+
+- [ ] Backend integration for persistent data
+- [ ] Social features (leaderboards, challenges)
+- [ ] More subjects (DBMS, ML, etc.)
+- [ ] Mobile app
+- [ ] Study streak tracking
+- [ ] Collaborative learning rooms
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+---
+
+## 👨‍💻 Author
+
+**Keerthivasa Krishna**
+- GitHub: [@Keerthivasakrishna](https://github.com/Keerthivasakrishna)
+
+---
+
+## 🙏 Acknowledgments
+
+- Google Gemini AI for powerful analysis
+- Supabase for backend infrastructure
+- Lucide React for beautiful icons
+- Framer Motion for smooth animations
+
+---
+
+## 📞 Support
+
+For questions or issues:
+- Open an [Issue](https://github.com/Keerthivasakrishna/intelligrow/issues)
+- Email: [your-email@example.com]
+
+---
+
+<div align="center">
+
+**⭐ Star this repo if you find it helpful!**
+
+Made with ❤️ for students, by students
+
+</div>
