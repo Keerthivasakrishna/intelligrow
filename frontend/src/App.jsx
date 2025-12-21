@@ -6,7 +6,7 @@ import { supabase } from './supabase'
 // Student Pages
 import Login from './pages/Login'
 import PetSelection from './pages/PetSelection'
-import Dashboard from './ pages/Dashboard'
+import Dashboard from './pages/Dashboard'
 import SubjectGraph from './pages/SubjectGraph'
 import TopicContent from './pages/TopicContent'
 import Quiz from './pages/Quiz'
@@ -101,4 +101,5 @@ function App() {
 }
 
 export default App
+
 
