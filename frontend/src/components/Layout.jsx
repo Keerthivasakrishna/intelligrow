@@ -62,16 +62,22 @@ export default function Layout() {
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
+            // Check for email auth FIRST
+            const currentUserCheck = localStorage.getItem('currentUser')
+            const isEmailAuthNow = currentUserCheck && currentUserCheck !== 'null'
+            const isGuestNow = localStorage.getItem('guestMode') === 'true'
+
+            // Don't update state for email/guest users
+            if (isEmailAuthNow || isGuestNow) {
+                return
+            }
+
             setSession(session)
             setUser(session?.user ?? null)
 
-            // Check for email auth INSIDE the listener (not from closure)
-            const currentUserCheck = localStorage.getItem('currentUser')
-            const isEmailAuthNow = currentUserCheck && currentUserCheck !== 'null'
-
-            // Only redirect if NO session AND NO email auth
-            if (!session && !isEmailAuthNow) {
-                console.log('No auth detected, redirecting...')
+            // Only redirect if NO session
+            if (!session) {
+                console.log('No Supabase session, redirecting...')
                 navigate('/')
             }
         })
@@ -190,3 +196,4 @@ export default function Layout() {
         </div>
     )
 }
+
