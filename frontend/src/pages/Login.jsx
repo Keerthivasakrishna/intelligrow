@@ -1,22 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mail, Lock, Eye, EyeOff, Sparkles, BookOpen, Shield } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Sparkles } from 'lucide-react'
 import { supabase } from '../supabase'
 
-// Admin credentials
+// Admin credentials (separate from Supabase)
 const ADMIN_CREDENTIALS = {
     email: 'admin@intelligrow.com',
     password: 'admin@intelligrow2024'
 }
-
-// Pre-loaded demo student accounts
-const DEMO_USERS = [
-    { name: 'Keerthi', email: 'keerthi@gmail.com', password: 'kvk@123' },
-    { name: 'Sibhi', email: 'sibhi@gmail.com', password: 'sibhi@123' },
-    { name: 'Swarna', email: 'swarna@gmail.com', password: 'swarna@123' },
-    { name: 'Neya', email: 'neya@gmail.com', password: 'neya@123' }
-]
 
 export default function Login() {
     const navigate = useNavigate()
@@ -28,74 +20,136 @@ export default function Login() {
         password: ''
     })
     const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
 
-    const handleSignIn = (e) => {
+    const handleSignIn = async (e) => {
         e.preventDefault()
         setError('')
+        setLoading(true)
 
-        // Check if admin
-        if (formData.email === ADMIN_CREDENTIALS.email && formData.password === ADMIN_CREDENTIALS.password) {
-            localStorage.setItem('adminSession', JSON.stringify({
-                isAdmin: true,
-                email: ADMIN_CREDENTIALS.email,
-                name: 'Administrator',
-                loginTime: new Date().toISOString()
-            }))
-            localStorage.setItem('currentUser', JSON.stringify({
-                name: 'Administrator',
-                email: ADMIN_CREDENTIALS.email,
-                isAdmin: true
-            }))
-            localStorage.removeItem('guestMode')
-            navigate('/admin/dashboard')
-            return
-        }
+        try {
+            // Check if admin
+            if (formData.email === ADMIN_CREDENTIALS.email && formData.password === ADMIN_CREDENTIALS.password) {
+                localStorage.setItem('adminSession', JSON.stringify({
+                    isAdmin: true,
+                    email: ADMIN_CREDENTIALS.email,
+                    name: 'Administrator',
+                    loginTime: new Date().toISOString()
+                }))
+                localStorage.setItem('currentUser', JSON.stringify({
+                    name: 'Administrator',
+                    email: ADMIN_CREDENTIALS.email,
+                    isAdmin: true
+                }))
+                localStorage.removeItem('guestMode')
+                navigate('/admin/dashboard')
+                return
+            }
 
-        // Check student credentials
-        const users = JSON.parse(localStorage.getItem('users') || JSON.stringify(DEMO_USERS))
-        const user = users.find(u => u.email === formData.email && u.password === formData.password)
+            // Try Supabase authentication for students
+            const { data, error: signInError } = await supabase.auth.signInWithPassword({
+                email: formData.email,
+                password: formData.password
+            })
 
-        if (user) {
-            localStorage.setItem('currentUser', JSON.stringify({ name: user.name, email: user.email, isAdmin: false }))
-            localStorage.removeItem('guestMode')
-            navigate('/select-pet')
-        } else {
-            setError('Invalid email or password')
+            if (signInError) {
+                setError(signInError.message)
+                setLoading(false)
+                return
+            }
+
+            if (data.user) {
+                // Get user profile from database
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', data.user.id)
+                    .single()
+
+                localStorage.setItem('currentUser', JSON.stringify({
+                    id: data.user.id,
+                    name: profile?.full_name || data.user.email,
+                    email: data.user.email,
+                    isAdmin: false
+                }))
+                localStorage.removeItem('guestMode')
+                navigate('/select-pet')
+            }
+        } catch (err) {
+            setError('Login failed. Please try again.')
+            console.error('Login error:', err)
+        } finally {
+            setLoading(false)
         }
     }
 
-    const handleSignUp = (e) => {
+    const handleSignUp = async (e) => {
         e.preventDefault()
         setError('')
+        setLoading(true)
 
         if (!formData.name || !formData.email || !formData.password) {
             setError('All fields are required')
+            setLoading(false)
             return
         }
 
         if (formData.password.length < 6) {
             setError('Password must be at least 6 characters')
+            setLoading(false)
             return
         }
 
-        const users = JSON.parse(localStorage.getItem('users') || JSON.stringify(DEMO_USERS))
+        try {
+            // Sign up with Supabase
+            const { data, error: signUpError } = await supabase.auth.signUp({
+                email: formData.email,
+                password: formData.password,
+                options: {
+                    data: {
+                        full_name: formData.name
+                    }
+                }
+            })
 
-        if (users.find(u => u.email === formData.email)) {
-            setError('Email already exists')
-            return
+            if (signUpError) {
+                setError(signUpError.message)
+                setLoading(false)
+                return
+            }
+
+            if (data.user) {
+                // Create profile in database
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert([{
+                        id: data.user.id,
+                        email: data.user.email,
+                        full_name: formData.name,
+                        created_at: new Date().toISOString()
+                    }])
+
+                if (profileError) {
+                    console.error('Profile creation error:', profileError)
+                }
+
+                localStorage.setItem('currentUser', JSON.stringify({
+                    id: data.user.id,
+                    name: formData.name,
+                    email: data.user.email,
+                    isAdmin: false
+                }))
+                localStorage.removeItem('guestMode')
+
+                setError('Account created! Please check your email to verify (or continue directly for demo).')
+                setTimeout(() => navigate('/select-pet'), 2000)
+            }
+        } catch (err) {
+            setError('Sign up failed. Please try again.')
+            console.error('Sign up error:', err)
+        } finally {
+            setLoading(false)
         }
-
-        const newUser = {
-            name: formData.name,
-            email: formData.email,
-            password: formData.password
-        }
-
-        users.push(newUser)
-        localStorage.setItem('users', JSON.stringify(users))
-        localStorage.setItem('currentUser', JSON.stringify({ name: newUser.name, email: newUser.email, isAdmin: false }))
-        localStorage.removeItem('guestMode')
-        navigate('/select-pet')
     }
 
     const handleGuestLogin = () => {
@@ -112,20 +166,6 @@ export default function Login() {
         localStorage.setItem('guestUser', JSON.stringify(guestUser))
         localStorage.removeItem('currentUser')
         navigate('/select-pet')
-    }
-
-    const handleGoogleLogin = async () => {
-        try {
-            const { data, error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: `${window.location.origin}/select-pet`
-                }
-            })
-            if (error) throw error
-        } catch (error) {
-            setError('Google login failed. Please try email/password or guest mode.')
-        }
     }
 
     return (
@@ -227,12 +267,12 @@ export default function Login() {
                             </p>
                         </div>
 
-                        {/* Error Message */}
+                        {/* Error/Success Message */}
                         {error && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"
+                                className={`mb-4 p-3 ${error.includes('created') ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700'} border rounded-lg text-sm`}
                             >
                                 {error}
                             </motion.div>
@@ -252,6 +292,7 @@ export default function Login() {
                                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition-colors"
                                         placeholder="John Doe"
                                         required={isSignUp}
+                                        disabled={loading}
                                     />
                                 </div>
                             )}
@@ -265,10 +306,11 @@ export default function Login() {
                                     <input
                                         type="email"
                                         value={formData.email}
-                                        onChange={(e) => setFormData({...formData, email: e.target.value })}
-                                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition-colors"
-                                    placeholder="you@example.com"
-                                    required
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition-colors"
+                                        placeholder="you@example.com"
+                                        required
+                                        disabled={loading}
                                     />
                                 </div>
                             </div>
@@ -286,6 +328,7 @@ export default function Login() {
                                         className="w-full pl-10 pr-12 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition-colors"
                                         placeholder="••••••••"
                                         required
+                                        disabled={loading}
                                     />
                                     <button
                                         type="button"
@@ -299,11 +342,12 @@ export default function Login() {
 
                             <motion.button
                                 type="submit"
-                                className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg shadow-lg"
-                                whileHover={{ scale: 1.02, boxShadow: '0 20px 40px rgba(168, 85, 247, 0.4)' }}
-                                whileTap={{ scale: 0.98 }}
+                                className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg shadow-lg disabled:opacity-50"
+                                whileHover={{ scale: loading ? 1 : 1.02 }}
+                                whileTap={{ scale: loading ? 1 : 0.98 }}
+                                disabled={loading}
                             >
-                                {isSignUp ? 'Sign Up' : 'Sign In'}
+                                {loading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
                             </motion.button>
                         </form>
 
@@ -319,6 +363,7 @@ export default function Login() {
                             <button
                                 onClick={handleGuestLogin}
                                 className="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-md"
+                                disabled={loading}
                             >
                                 🎮 Continue as Guest
                             </button>
@@ -329,6 +374,7 @@ export default function Login() {
                             <button
                                 onClick={() => setIsSignUp(!isSignUp)}
                                 className="text-purple-600 hover:text-purple-700 font-semibold"
+                                disabled={loading}
                             >
                                 {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
                             </button>
@@ -336,18 +382,10 @@ export default function Login() {
 
                         {/* Demo Credentials */}
                         <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                            <p className="text-xs font-semibold text-purple-800 mb-2">🔑 Demo Accounts:</p>
-                            <div className="grid grid-cols-2 gap-2 text-xs text-purple-700 font-mono">
-                                <div>
-                                    <div className="font-bold">Student:</div>
-                                    <div>keerthi@gmail.com</div>
-                                    <div>kvk@123</div>
-                                </div>
-                                <div>
-                                    <div className="font-bold">Admin:</div>
-                                    <div>admin@intelligrow.com</div>
-                                    <div>admin@intelligrow2024</div>
-                                </div>
+                            <p className="text-xs font-semibold text-purple-800 mb-2">🔑 Demo Account:</p>
+                            <div className="text-xs text-purple-700 font-mono space-y-1">
+                                <div><span className="font-bold">Admin:</span> admin@intelligrow.com / admin@intelligrow2024</div>
+                                <div><span className="font-bold">Or:</span> Sign up with any email!</div>
                             </div>
                         </div>
                     </div>
@@ -356,4 +394,3 @@ export default function Login() {
         </div>
     )
 }
-

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Users, TrendingUp, Award, Clock, BookOpen, BarChart3, Filter, Search } from 'lucide-react'
+import { Users, TrendingUp, Award, Clock, BookOpen, BarChart3, Search, RefreshCw } from 'lucide-react'
+import { supabase } from '../supabase'
 
 export default function AdminDashboard() {
     const [students, setStudents] = useState([])
     const [loading, setLoading] = useState(true)
-    const [filter, setFilter] = useState({ year: 'all', subject: 'all', performanceRange: 'all' })
+    const [filter, setFilter] = useState({ performanceRange: 'all' })
     const [searchTerm, setSearchTerm] = useState('')
 
     useEffect(() => {
@@ -13,142 +14,109 @@ export default function AdminDashboard() {
     }, [])
 
     const loadStudentData = async () => {
+        setLoading(true)
         try {
-            const response = await fetch('/data/students.csv')
-            const csvText = await response.text()
-            const parsed = parseCSV(csvText)
-            setStudents(parsed)
-            setLoading(false)
+            // Fetch all users from Supabase
+            const { data: profiles, error } = await supabase
+                .from('user_stats')
+                .select('*')
+                .order('created_at', { ascending: false })
+
+            if (error) throw error
+
+            console.log('Loaded students from Supabase:', profiles)
+            setStudents(profiles || [])
         } catch (error) {
-            console.error('Error loading student data:', error)
+            console.error('Error loading students:', error)
+            // Show error message
+            setStudents([])
+        } finally {
             setLoading(false)
         }
     }
 
-    const parseCSV = (csvText) => {
-        const lines = csvText.trim().split('\n')
-        const headers = lines[0].split(',')
-
-        return lines.slice(1).map(line => {
-            const values = line.split(',')
-            const student = {}
-            headers.forEach((header, index) => {
-                student[header.trim()] = values[index] ? values[index].trim().replace(/"/g, '') : ''
-            })
-            return student
-        })
-    }
-
     // Calculate analytics
-    const analytics = {
+    const analytics = students.length > 0 ? {
         totalStudents: students.length,
-        avgCompletion: (students.reduce((acc, s) => {
-            const dsa = parseInt(s.subject_progress_dsa) || 0
-            const cn = parseInt(s.subject_progress_cn) || 0
-            const os = parseInt(s.subject_progress_os) || 0
-            const enrolled = s.subjects_enrolled.split(',').length
-            return acc + (dsa + cn + os) / enrolled
-        }, 0) / students.length).toFixed(1),
-        avgQuizScore: (students.reduce((acc, s) => acc + (parseFloat(s.average_quiz_score) || 0), 0) / students.length).toFixed(1),
-        totalQuizzes: students.reduce((acc, s) => acc + parseInt(s.topics_completed_count || 0), 0),
-        avgTimeSpent: Math.round(students.reduce((acc, s) => acc + parseInt(s.total_time_spent_minutes || 0), 0) / students.length),
-        mostEngagedSubject: (() => {
-            const subjectCounts = { DSA: 0, CN: 0, OS: 0 }
-            students.forEach(s => {
-                if (s.subjects_enrolled.includes('DSA')) subjectCounts.DSA++
-                if (s.subjects_enrolled.includes('CN')) subjectCounts.CN++
-                if (s.subjects_enrolled.includes('OS')) subjectCounts.OS++
-            })
-            return Object.keys(subjectCounts).reduce((a, b) => subjectCounts[a] > subjectCounts[b] ? a : b)
-        })(),
-        leastCompletedSubject: (() => {
-            const avgProgress = {
-                DSA: students.reduce((acc, s) => acc + (parseInt(s.subject_progress_dsa) || 0), 0) / students.filter(s => s.subjects_enrolled.includes('DSA')).length,
-                CN: students.reduce((acc, s) => acc + (parseInt(s.subject_progress_cn) || 0), 0) / students.filter(s => s.subjects_enrolled.includes('CN')).length,
-                OS: students.reduce((acc, s) => acc + (parseInt(s.subject_progress_os) || 0), 0) / students.filter(s => s.subjects_enrolled.includes('OS')).length,
-            }
-            return Object.keys(avgProgress).reduce((a, b) => avgProgress[a] < avgProgress[b] ? a : b)
-        })()
+        avgQuizScore: (students.reduce((acc, s) => acc + (parseFloat(s.avg_quiz_score) || 0), 0) / students.length).toFixed(1),
+        totalQuizzes: students.reduce((acc, s) => acc + (parseInt(s.total_quizzes) || 0), 0),
+        avgTimeSpent: Math.round(students.reduce((acc, s) => acc + (parseInt(s.total_time_spent_seconds) || 0), 0) / students.length / 60),
+        avgXP: Math.round(students.reduce((acc, s) => acc + (parseInt(s.xp) || 0), 0) / students.length)
+    } : {
+        totalStudents: 0,
+        avgQuizScore: 0,
+        totalQuizzes: 0,
+        avgTimeSpent: 0,
+        avgXP: 0
     }
 
     // Filter students
     const filteredStudents = students.filter(student => {
-        const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesYear = filter.year === 'all' || student.year === filter.year
-        const matchesSubject = filter.subject === 'all' || student.subjects_enrolled.includes(filter.subject)
+        const matchesSearch = student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            student.email?.toLowerCase().includes(searchTerm.toLowerCase())
 
         let matchesPerformance = true
         if (filter.performanceRange !== 'all') {
-            const avgScore = parseFloat(student.average_quiz_score) || 0
+            const avgScore = parseFloat(student.avg_quiz_score) || 0
             if (filter.performanceRange === 'low') matchesPerformance = avgScore < 65
             else if (filter.performanceRange === 'medium') matchesPerformance = avgScore >= 65 && avgScore < 80
             else if (filter.performanceRange === 'high') matchesPerformance = avgScore >= 80
         }
 
-        return matchesSearch && matchesYear && matchesSubject && matchesPerformance
+        return matchesSearch && matchesPerformance
     })
 
     // Generate insights
     const generateInsights = () => {
+        if (students.length === 0) return ['No students registered yet. Users will appear here after signing up!']
+
         const insights = []
 
-        // Struggling students on specific topics
-        const topicCounts = {}
-        students.forEach(s => {
-            const topic = s.current_learning_node
-            topicCounts[topic] = (topicCounts[topic] || 0) + 1
-        })
-        const mostCommonTopic = Object.keys(topicCounts).sort((a, b) => topicCounts[b] - topicCounts[a])[0]
-        const count = topicCounts[mostCommonTopic] || 0
-        const percentage = ((count / students.length) * 100).toFixed(0)
-        insights.push(`${percentage}% of students are currently on "${mostCommonTopic}" topic`)
+        // Total registered
+        insights.push(`${students.length} total students registered in the platform`)
 
-        // Subject performance comparison
-        const dsaAvg = students.filter(s => s.subjects_enrolled.includes('DSA')).reduce((acc, s) => acc + (parseFloat(s.average_quiz_score) || 0), 0) / students.filter(s => s.subjects_enrolled.includes('DSA')).length
-        const cnAvg = students.filter(s => s.subjects_enrolled.includes('CN')).reduce((acc, s) => acc + (parseFloat(s.average_quiz_score) || 0), 0) / students.filter(s => s.subjects_enrolled.includes('CN')).length
-        const osAvg = students.filter(s => s.subjects_enrolled.includes('OS')).reduce((acc, s) => acc + (parseFloat(s.average_quiz_score) || 0), 0) / students.filter(s => s.subjects_enrolled.includes('OS')).length
-
-        const scores = [
-            { name: 'DSA', avg: dsaAvg },
-            { name: 'CN', avg: cnAvg },
-            { name: 'OS', avg: osAvg }
-        ].sort((a, b) => a.avg - b.avg)
-
-        const diff = ((scores[2].avg - scores[0].avg) / scores[0].avg * 100).toFixed(1)
-        insights.push(`${scores[0].name} has ${diff}% lower average quiz score than ${scores[2].name}`)
-
-        // Year-wise performance
-        const yearPerformance = {}
-        students.forEach(s => {
-            if (!yearPerformance[s.year]) yearPerformance[s.year] = { total: 0, count: 0 }
-            yearPerformance[s.year].total += parseFloat(s.average_quiz_score) || 0
-            yearPerformance[s.year].count++
-        })
-        Object.keys(yearPerformance).forEach(year => {
-            yearPerformance[year].avg = yearPerformance[year].total / yearPerformance[year].count
-        })
-
-        // Low completion topics
-        const lowCompletion = students.filter(s => {
-            const avg = (parseInt(s.subject_progress_dsa) + parseInt(s.subject_progress_cn) + parseInt(s.subject_progress_os)) / 3
-            return avg < 50
-        })
-        if (lowCompletion.length > 0) {
-            insights.push(`${lowCompletion.length} students (${((lowCompletion.length / students.length) * 100).toFixed(0)}%) have below 50% completion rate`)
+        // Average performance
+        const avgScore = parseFloat(analytics.avgQuizScore)
+        if (avgScore > 0) {
+            insights.push(`Platform average quiz score is ${avgScore.toFixed(1)}%`)
         }
 
-        // Most engaged subject
-        insights.push(`${analytics.mostEngagedSubject} shows the highest engagement with ${students.filter(s => s.subjects_enrolled.includes(analytics.mostEngagedSubject)).length} enrolled students`)
+        // Activity level
+        const activeStudents = students.filter(s => {
+            const lastActive = new Date(s.last_active)
+            const daysSince = (Date.now() - lastActive) / (1000 * 60 * 60 * 24)
+            return daysSince < 7
+        }).length
+
+        if (activeStudents > 0) {
+            const percentage = ((activeStudents / students.length) * 100).toFixed(0)
+            insights.push(`${percentage}% of students (${activeStudents}/${students.length}) are active in the last 7 days`)
+        }
+
+        // Top performers
+        const topPerformers = students.filter(s => parseFloat(s.avg_quiz_score) >= 80).length
+        if (topPerformers > 0) {
+            insights.push(`${topPerformers} students are performing excellently with 80%+ average scores`)
+        }
+
+        // Engagement
+        if (analytics.totalQuizzes > 0) {
+            const quizzesPerStudent = (analytics.totalQuizzes / students.length).toFixed(1)
+            insights.push(`Average ${quizzesPerStudent} quizzes completed per student`)
+        }
 
         return insights
     }
 
-    const insights = students.length > 0 ? generateInsights() : []
+    const insights = generateInsights()
 
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="text-2xl text-blue-600 animate-pulse">Loading Analytics...</div>
+                <div className="text-center">
+                    <div className="text-2xl text-blue-600 animate-pulse mb-4">Loading Student Data...</div>
+                    <p className="text-gray-400">Fetching from Supabase database</p>
+                </div>
             </div>
         )
     }
@@ -156,9 +124,18 @@ export default function AdminDashboard() {
     return (
         <div className="max-w-7xl mx-auto p-6">
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-4xl font-bold text-white mb-2">Learning Analytics Dashboard</h1>
-                <p className="text-gray-400">Institutional insights and student performance monitoring</p>
+            <div className="mb-8 flex justify-between items-center">
+                <div>
+                    <h1 className="text-4xl font-bold text-white mb-2">Learning Analytics Dashboard</h1>
+                    <p className="text-gray-400">Real-time student performance monitoring from Supabase</p>
+                </div>
+                <button
+                    onClick={loadStudentData}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                >
+                    <RefreshCw className="w-4 h-4" />
+                    Refresh Data
+                </button>
             </div>
 
             {/* Overview Metrics */}
@@ -170,53 +147,23 @@ export default function AdminDashboard() {
                     color="bg-blue-500"
                 />
                 <MetricCard
-                    icon={TrendingUp}
-                    label="Avg Completion"
-                    value={`${analytics.avgCompletion}%`}
-                    color="bg-green-500"
-                />
-                <MetricCard
                     icon={Award}
                     label="Avg Quiz Score"
                     value={`${analytics.avgQuizScore}%`}
                     color="bg-purple-500"
                 />
                 <MetricCard
+                    icon={TrendingUp}
+                    label="Total Quizzes"
+                    value={analytics.totalQuizzes}
+                    color="bg-green-500"
+                />
+                <MetricCard
                     icon={Clock}
-                    label="Avg Time Spent"
-                    value={`${Math.floor(analytics.avgTimeSpent / 60)}h ${analytics.avgTimeSpent % 60}m`}
+                    label="Avg Study Time"
+                    value={`${analytics.avgTimeSpent} min`}
                     color="bg-indigo-500"
                 />
-            </div>
-
-            {/* Additional Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="glass-card p-6 bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-3 mb-2">
-                        <BookOpen className="w-6 h-6 text-green-400" />
-                        <h3 className="font-semibold text-white">Most Engaged</h3>
-                    </div>
-                    <p className="text-3xl font-bold text-green-400">{analytics.mostEngagedSubject}</p>
-                    <p className="text-sm text-gray-400 mt-1">Highest enrollment</p>
-                </div>
-
-                <div className="glass-card p-6 bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-3 mb-2">
-                        <BarChart3 className="w-6 h-6 text-orange-400" />
-                        <h3 className="font-semibold text-white">Needs Attention</h3>
-                    </div>
-                    <p className="text-3xl font-bold text-orange-400">{analytics.leastCompletedSubject}</p>
-                    <p className="text-sm text-gray-400 mt-1">Lowest avg progress</p>
-                </div>
-
-                <div className="glass-card p-6 bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Award className="w-6 h-6 text-blue-400" />
-                        <h3 className="font-semibold text-white">Total Quizzes</h3>
-                    </div>
-                    <p className="text-3xl font-bold text-blue-400">{analytics.totalQuizzes}</p>
-                    <p className="text-sm text-gray-400 mt-1">Topics completed</p>
-                </div>
             </div>
 
             {/* AI-Generated Insights */}
@@ -258,29 +205,6 @@ export default function AdminDashboard() {
                     </div>
 
                     <select
-                        value={filter.year}
-                        onChange={(e) => setFilter({ ...filter, year: e.target.value })}
-                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-400"
-                    >
-                        <option value="all">All Years</option>
-                        <option value="1st">1st Year</option>
-                        <option value="2nd">2nd Year</option>
-                        <option value="3rd">3rd Year</option>
-                        <option value="4th">4th Year</option>
-                    </select>
-
-                    <select
-                        value={filter.subject}
-                        onChange={(e) => setFilter({ ...filter, subject: e.target.value })}
-                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-400"
-                    >
-                        <option value="all">All Subjects</option>
-                        <option value="DSA">DSA</option>
-                        <option value="CN">Computer Networks</option>
-                        <option value="OS">Operating Systems</option>
-                    </select>
-
-                    <select
                         value={filter.performanceRange}
                         onChange={(e) => setFilter({ ...filter, performanceRange: e.target.value })}
                         className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-400"
@@ -298,69 +222,53 @@ export default function AdminDashboard() {
 
             {/* Student Table */}
             <div className="glass-card p-6 bg-white/5 border border-white/10">
-                <h3 className="text-2xl font-bold text-white mb-4">Student Performance</h3>
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="border-b border-white/10">
-                                <th className="text-left py-3 px-4 text-gray-300 font-semibold">Name</th>
-                                <th className="text-left py-3 px-4 text-gray-300 font-semibold">Year</th>
-                                <th className="text-left py-3 px-4 text-gray-300 font-semibold">Dept</th>
-                                <th className="text-left py-3 px-4 text-gray-300 font-semibold">Subjects</th>
-                                <th className="text-left py-3 px-4 text-gray-300 font-semibold">Avg Progress</th>
-                                <th className="text-left py-3 px-4 text-gray-300 font-semibold">Quiz Score</th>
-                                <th className="text-left py-3 px-4 text-gray-300 font-semibold">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredStudents.map((student, idx) => {
-                                const avgProgress = ((parseInt(student.subject_progress_dsa) || 0) +
-                                    (parseInt(student.subject_progress_cn) || 0) +
-                                    (parseInt(student.subject_progress_os) || 0)) / 3
-                                const quizScore = parseFloat(student.average_quiz_score) || 0
-                                const isActive = new Date(student.last_active_date) > new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+                <h3 className="text-2xl font-bold text-white mb-4">Registered Students</h3>
 
-                                return (
-                                    <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
-                                        <td className="py-3 px-4 text-white font-medium">{student.name}</td>
-                                        <td className="py-3 px-4 text-gray-300">{student.year}</td>
-                                        <td className="py-3 px-4 text-gray-300">{student.department}</td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex gap-1">
-                                                {student.subjects_enrolled.split(',').map((subj, i) => (
-                                                    <span key={i} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded">
-                                                        {subj.trim()}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full ${avgProgress >= 75 ? 'bg-green-500' : avgProgress >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                                                        style={{ width: `${avgProgress}%` }}
-                                                    ></div>
-                                                </div>
-                                                <span className="text-gray-300 text-sm">{avgProgress.toFixed(0)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <span className={`font-semibold ${quizScore >= 80 ? 'text-green-400' : quizScore >= 65 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                                {quizScore.toFixed(1)}%
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${isActive ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'}`}>
-                                                {isActive ? 'Active' : 'Inactive'}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+                {students.length === 0 ? (
+                    <div className="text-center py-12">
+                        <Users className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                        <p className="text-gray-400 text-lg mb-2">No students registered yet</p>
+                        <p className="text-gray-500 text-sm">Students will appear here after signing up on the platform</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-white/10">
+                                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Name</th>
+                                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Email</th>
+                                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">XP</th>
+                                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Level</th>
+                                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Quizzes</th>
+                                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Avg Score</th>
+                                    <th className="text-left py-3 px-4 text-gray-300 font-semibold">Joined</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredStudents.map((student, idx) => {
+                                    const quizScore = parseFloat(student.avg_quiz_score) || 0
+                                    const joinDate = new Date(student.created_at).toLocaleDateString()
+
+                                    return (
+                                        <tr key={student.id || idx} className="border-b border-white/5 hover:bg-white/5">
+                                            <td className="py-3 px-4 text-white font-medium">{student.full_name}</td>
+                                            <td className="py-3 px-4 text-gray-300">{student.email}</td>
+                                            <td className="py-3 px-4 text-yellow-400 font-semibold">{student.xp || 0}</td>
+                                            <td className="py-3 px-4 text-blue-400 font-semibold">{student.pet_level || 1}</td>
+                                            <td className="py-3 px-4 text-gray-300">{student.total_quizzes || 0}</td>
+                                            <td className="py-3 px-4">
+                                                <span className={`font-semibold ${quizScore >= 80 ? 'text-green-400' : quizScore >= 65 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                                    {quizScore > 0 ? `${quizScore.toFixed(1)}%` : 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-gray-400 text-sm">{joinDate}</td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     )
@@ -385,4 +293,3 @@ function MetricCard({ icon: Icon, label, value, color }) {
         </motion.div>
     )
 }
-
